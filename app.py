@@ -7,8 +7,8 @@ import os
 app = Flask(__name__)
 
 # 環境変数からトークンとシークレットを取得
-line_bot_api = LineBotApi("r8pZIxjH2G/npqA6gSivb1aey176KncgOtrrTbtUdCXUbO93EdFX/PhMMtZr8XB4g2AHWCWaS1lO32TjWT23k/ALB4v/lQIrfJdKescVL+ZezeN4NW9zIQnROFoPJxWU4JU0U8y2gjIcInpp6qz0fAdB04t89/1O/w1cDnyilFU=")
-handler = WebhookHandler("d330e551cb13fbc77eb4d4554b83201c")
+line_bot_api = LineBotApi(os.environ['LINE_CHANNEL_ACCESS_TOKEN'])
+handler = WebhookHandler(os.environ['LINE_CHANNEL_SECRET'])
 
 @app.route("/callback", methods=['POST'])
 def callback():
