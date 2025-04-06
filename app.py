@@ -10,11 +10,16 @@ app = Flask(__name__)
 line_bot_api = LineBotApi(os.getenv("LINE_CHANNEL_ACCESS_TOKEN"))
 handler = WebhookHandler(os.getenv("LINE_CHANNEL_SECRET"))
 
-supported_encodings = [
-    "utf-8", "utf-16", "utf-16-le", "utf-16-be",
-    "utf-32", "utf-32-le", "utf-32-be",
-    "shift_jis"
-]
+supported_encodings = {
+    "8": "shift_jis",      # Shift_JIS
+    "16": "utf-16",        # UTF-16
+    "16l": "utf-16-le",    # UTF-16 little-endian
+    "16b": "utf-16-be",    # UTF-16 big-endian
+    "32": "utf-32",        # UTF-32
+    "32l": "utf-32-le",    # UTF-32 little-endian
+    "32b": "utf-32-be",    # UTF-32 big-endian
+    "s": "shift_jis"       # Shift_JIS shorthand for 's'
+}
 
 def score_natural_text(text: str) -> int:
     score = 0
@@ -30,7 +35,7 @@ def score_natural_text(text: str) -> int:
 def smart_decode(hex_str: str) -> tuple[str, str] | tuple[str, None]:
     candidates = []
     raw_bytes = bytes.fromhex(hex_str)
-    for enc in supported_encodings:
+    for enc in supported_encodings.values():
         try:
             decoded = raw_bytes.decode(enc)
             score = score_natural_text(decoded)
@@ -57,15 +62,15 @@ def callback():
 @handler.add(MessageEvent, message=TextMessage)
 def handle_message(event):
     input_text = event.message.text
-    # --- エンコード（-f オプション付き） ---
-    if " -f " in input_text:
+    # --- エンコード（オプション付き） ---
+    if " " in input_text:
         try:
-            main_text, option = input_text.rsplit(" -f ", 1)
+            main_text, option = input_text.split(" ", 1)
             encoding = option.lower()
             if encoding not in supported_encodings:
-                reply = f"対応していないエンコーディングです: {encoding}\n対応可能: {', '.join(supported_encodings)}"
+                reply = f"対応していないエンコーディングです: {encoding}\n対応可能: {', '.join(supported_encodings.keys())}"
             else:
-                encoded = main_text.encode(encoding).hex()
+                encoded = main_text.encode(supported_encodings[encoding]).hex()
                 reply = encoded
         except Exception as e:
             reply = f"エンコードに失敗しました：{str(e)}"
@@ -83,7 +88,7 @@ def handle_message(event):
 
     # --- 不正な形式 ---
     else:
-        reply = "形式が正しくありません。\n例：こんにちは -f utf-8（エンコード）\nまたは 16進数（自動デコード）"
+        reply = "形式が正しくありません。\n例：こんにちは s（Shift_JISエンコード）\nまたは 16進数（自動デコード）"
 
     line_bot_api.reply_message(
         event.reply_token,
